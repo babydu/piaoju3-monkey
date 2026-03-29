@@ -32,30 +32,14 @@ const EncodingType = FileSystem.EncodingType;
 const cacheDirectory = FileSystem.cacheDirectory;
 import { 
   unifiedStorageService, 
-  TicketIndexItem, 
-  LocalTicket,
-  LocalTag,
-  LocalCollection,
+  TicketIndexItem,
   LocalSettings,
   LocalImage,
   localTicketService,
 } from '@/services/local-storage';
 import { createStyles } from './styles';
 
-interface Ticket {
-  id: string;
-  title: string;
-  summary?: string;
-  ocrText: string | null;
-  collectionId: string | null;
-  location: string | null;
-  notes: string | null;
-  ticketDate: string | null;
-  isPrivate: boolean;
-  deviceId?: string;
-  isCloudSynced?: boolean;
-  cloudId?: string;
-  createdAt: string;
+type TicketDisplayItem = TicketIndexItem & {
   images: Array<{
     id: string;
     url: string;
@@ -67,14 +51,11 @@ interface Ticket {
     id: string;
     name: string;
   }>;
-  collection?: {
-    id: string;
-    name: string;
-  };
-  // 本地票据特有
-  thumbnailPath?: string;
-  imageCount?: number;
-}
+  ocrText: string | null;
+  collectionId: string | null;
+  location: string | null;
+  notes: string | null;
+};
 
 interface Tag {
   id: string;
@@ -92,7 +73,7 @@ export default function HomeScreen() {
   const router = useSafeRouter();
   const { token } = useAuth();
 
-  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [tickets, setTickets] = useState<TicketDisplayItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   
@@ -165,12 +146,13 @@ export default function HomeScreen() {
         token ?? undefined
       );
 
-      // 转换为Ticket格式
-      const ticketsData: Ticket[] = ticketItems.map(item => ({
+      // 转换为显示格式
+      const ticketsData: TicketDisplayItem[] = ticketItems.map(item => ({
         id: item.id,
         title: item.title,
         ticketDate: item.ticketDate,
         createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
         isCloudSynced: item.isCloudSynced,
         cloudId: item.cloudId,
         thumbnailPath: item.thumbnailPath,
@@ -214,15 +196,17 @@ export default function HomeScreen() {
       // 使用统一存储服务搜索
       const results = await unifiedStorageService.searchTickets(keyword, token ?? undefined);
       
-      const ticketsData: Ticket[] = results.map(item => ({
+      const ticketsData: TicketDisplayItem[] = results.map(item => ({
         id: item.id,
         title: item.title,
         ticketDate: item.ticketDate,
         createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
         isCloudSynced: item.isCloudSynced,
         cloudId: item.cloudId,
         thumbnailPath: item.thumbnailPath,
         imageCount: item.imageCount,
+        isPrivate: item.isPrivate || false,
         images: item.thumbnailPath ? [{
           id: '0',
           url: item.thumbnailPath,
@@ -234,7 +218,6 @@ export default function HomeScreen() {
         collectionId: null,
         location: null,
         notes: null,
-        isPrivate: false,
       }));
 
       setTickets(ticketsData);
@@ -495,7 +478,7 @@ export default function HomeScreen() {
     }
   };
 
-  const renderTicketItem = ({ item, index }: { item: Ticket; index: number }) => {
+  const renderTicketItem = ({ item, index }: { item: TicketDisplayItem; index: number }) => {
     const isSelected = selectedIds.has(item.id);
     
     // 获取图片URI（本地票据需要拼接完整路径）

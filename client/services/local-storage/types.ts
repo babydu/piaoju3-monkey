@@ -10,7 +10,7 @@ export interface TicketIndexItem {
   createdAt: string;
   updatedAt: string;
   isCloudSynced: boolean;
-  isPrivate?: boolean;
+  isPrivate: boolean;
   cloudId?: string;
   thumbnailPath?: string;
   imageCount: number;

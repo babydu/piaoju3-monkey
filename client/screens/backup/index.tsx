@@ -759,6 +759,7 @@ export default function BackupScreen() {
       createdAt: ticket.createdAt,
       updatedAt: ticket.updatedAt || ticket.createdAt,
       isCloudSynced: false,
+      isPrivate: ticket.isPrivate || false,
       thumbnailPath: ticket.images[0] ? `images/0.jpg` : undefined,
       imageCount: ticket.images.length,
     });
@@ -831,6 +832,7 @@ export default function BackupScreen() {
       createdAt: cloudTicket.createdAt,
       updatedAt: cloudTicket.updatedAt || cloudTicket.createdAt,
       isCloudSynced: false,
+      isPrivate: cloudTicket.isPrivate || false,
       thumbnailPath: cloudTicket.images[0] ? `images/0.jpg` : undefined,
       imageCount: cloudTicket.images.length,
     });

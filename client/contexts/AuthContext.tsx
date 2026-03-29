@@ -134,9 +134,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       if (data.success && data.user) {
         setUser(data.user);
-        setToken(data.user.id);
+        setToken(data.token || data.user.id);
         await AsyncStorage.setItem(STORAGE_KEY_USER, JSON.stringify(data.user));
-        await AsyncStorage.setItem(STORAGE_KEY_TOKEN, data.user.id);
+        await AsyncStorage.setItem(STORAGE_KEY_TOKEN, data.token || data.user.id);
         return { success: true };
       }
 
@@ -166,9 +166,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       if (data.success && data.user) {
         setUser(data.user);
-        setToken(data.user.id);
+        setToken(data.token || data.user.id);
         await AsyncStorage.setItem(STORAGE_KEY_USER, JSON.stringify(data.user));
-        await AsyncStorage.setItem(STORAGE_KEY_TOKEN, data.user.id);
+        await AsyncStorage.setItem(STORAGE_KEY_TOKEN, data.token || data.user.id);
         return { success: true };
       }
 

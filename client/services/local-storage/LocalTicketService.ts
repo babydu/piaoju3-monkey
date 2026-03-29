@@ -446,9 +446,9 @@ export class LocalTicketService {
     return ticket;
   }
 
-  /**
-   * 获取票据列表
-   */
+   /**
+    * 获取票据列表
+    */
   async getTickets(options?: {
     sortBy?: 'newest' | 'oldest';
     tagFilter?: string;
@@ -459,24 +459,41 @@ export class LocalTicketService {
     const index = await this.getTicketIndex();
     let tickets = [...index.tickets];
 
-    // 标签过滤（需要检查完整票据数据）
-    if (options?.tagFilter) {
+    // 需要过滤或修复数据时，批量读取票据数据
+    const needTagFilter = options?.tagFilter;
+    const needCollectionFilter = options?.collectionFilter;
+    const needFixIsPrivate = tickets.some(t => t.isPrivate === undefined);
+    
+    // 如果需要任何过滤或修复，先批量加载票据数据
+    const ticketCache = new Map<string, LocalTicket | null>();
+    if (needTagFilter || needCollectionFilter || needFixIsPrivate) {
+      for (const item of tickets) {
+        if (needTagFilter || needCollectionFilter || item.isPrivate === undefined) {
+          ticketCache.set(item.id, await this.getTicket(item.id));
+        }
+      }
+    }
+
+    // 标签过滤（使用缓存）
+    if (needTagFilter) {
+      const tagFilter = options.tagFilter!;
       const filteredIds: string[] = [];
       for (const item of tickets) {
-        const ticket = await this.getTicket(item.id);
-        if (ticket && ticket.tags.includes(options.tagFilter)) {
+        const ticket = ticketCache.get(item.id);
+        if (ticket && ticket.tags.includes(tagFilter)) {
           filteredIds.push(item.id);
         }
       }
       tickets = tickets.filter(t => filteredIds.includes(t.id));
     }
 
-    // 合集过滤
-    if (options?.collectionFilter) {
+    // 合集过滤（使用缓存）
+    if (needCollectionFilter) {
+      const collectionFilter = options.collectionFilter!;
       const filteredIds: string[] = [];
       for (const item of tickets) {
-        const ticket = await this.getTicket(item.id);
-        if (ticket && ticket.collectionId === options.collectionFilter) {
+        const ticket = ticketCache.get(item.id);
+        if (ticket && ticket.collectionId === collectionFilter) {
           filteredIds.push(item.id);
         }
       }
@@ -490,19 +507,26 @@ export class LocalTicketService {
       tickets.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }
 
-    // 修复：如果索引项缺少 isPrivate 字段，从完整票据数据中补充
+    // 修复：如果索引项缺少 isPrivate 字段（使用缓存）
+    const needsUpdate = [];
     for (let i = 0; i < tickets.length; i++) {
       if (tickets[i].isPrivate === undefined) {
-        const ticket = await this.getTicket(tickets[i].id);
+        const ticket = ticketCache.get(tickets[i].id);
         if (ticket) {
           tickets[i] = {
             ...tickets[i],
             isPrivate: ticket.isPrivate,
           };
-          // 同时更新索引文件
-          await this.addToIndex(ticket);
-          console.log('[LocalStorage] 已修复票据索引的 isPrivate 字段:', tickets[i].id, ticket.isPrivate);
+          needsUpdate.push(ticket);
         }
+      }
+    }
+    
+    // 批量更新索引文件（避免多次写入）
+    if (needsUpdate.length > 0) {
+      for (const ticket of needsUpdate) {
+        await this.addToIndex(ticket);
+        console.log('[LocalStorage] 已修复票据索引的 isPrivate 字段:', ticket.id, ticket.isPrivate);
       }
     }
 
