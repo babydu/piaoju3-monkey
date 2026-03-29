@@ -4,10 +4,6 @@ const appName = process.env.COZE_PROJECT_NAME || process.env.EXPO_PUBLIC_COZE_PR
 const projectId = process.env.COZE_PROJECT_ID || process.env.EXPO_PUBLIC_COZE_PROJECT_ID;
 const slugAppName = projectId ? `app${projectId}` : 'myapp';
 
-// Mob 秒验配置
-const MOB_APP_KEY = process.env.MOB_APP_KEY || '3caaf104bc3d4';
-const MOB_APP_SECRET = process.env.MOB_APP_SECRET || 'dc47854aa32d3e9778e328ef1770fb98';
-
 export default ({ config }: ConfigContext): ExpoConfig => {
   return {
     ...config,
@@ -68,16 +64,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         "expo-camera",
         {
           "cameraPermission": `票夹管家App需要访问相机以拍摄照片和视频。`,
-          "microphonePermission": `票夹管家App需要访问麦克风以录制视频声音。`,
+          "microphonePermission": `允许票夹管家App访问麦克风以录制视频声音。`,
           "recordAudioAndroid": true
-        }
-      ],
-      // Mob 秒验插件（仅在 prebuild 后生效）
-      [
-        './plugins/mob-verify',
-        {
-          appKey: MOB_APP_KEY,
-          appSecret: MOB_APP_SECRET,
         }
       ]
     ],
